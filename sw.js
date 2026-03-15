@@ -1,8 +1,21 @@
-const CACHE = 'jp-kalk-v1';
-const FILES = ['/', '/index.html', '/manifest.json'];
+const CACHE = 'jp-kalk-v2';
+const FILES = [
+  '/jp-kalkulator/',
+  '/jp-kalkulator/index.html',
+  '/jp-kalkulator/manifest.json',
+  '/jp-kalkulator/icon.png'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys =>
+    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+  ));
+  self.clients.claim();
 });
 
 self.addEventListener('fetch', e => {
