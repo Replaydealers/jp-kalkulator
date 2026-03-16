@@ -334,10 +334,10 @@
   <div class="card">
     <div class="card-title">Kosten</div>
     <div class="field">
-      <label>Sendico-Gebühr</label>
-      <div class="input-wrap">
-        <input type="number" inputmode="numeric" id="sendico_pct" value="10" min="0" max="100" oninput="calc()" />
-        <span class="unit">%</span>
+      <label>Sendico-Gebühr (pauschal)</label>
+      <div class="input-wrap" style="background: var(--bg); opacity: 0.6;">
+        <input type="number" inputmode="numeric" id="sendico_jpy" value="500" min="0" step="100" disabled style="color: var(--muted);" />
+        <span class="unit">¥ fix</span>
       </div>
     </div>
     <div class="field">
@@ -381,10 +381,11 @@
 
     <div class="breakdown">
       <div class="brow"><span class="bl">EK (EUR)</span><span class="br" id="b_ek">—</span></div>
-      <div class="brow"><span class="bl">Sendico (<span id="b_spct">10</span>%)</span><span class="br" id="b_sendico">—</span></div>
+      <div class="brow"><span class="bl">Sendico (500 ¥)</span><span class="br" id="b_sendico">—</span></div>
       <div class="brow"><span class="bl">Versand JP→DE</span><span class="br" id="b_versand">—</span></div>
       <div class="brow" id="row_ebay"><span class="bl">eBay-Geb. (12%)</span><span class="br" id="b_ebay">—</span></div>
-      <div class="brow total"><span class="bl">Marge</span><span class="br" id="b_marge">—</span></div>
+      <div class="brow"><span class="bl">USt auf Marge (19%)</span><span class="br" id="b_ust">—</span></div>
+      <div class="brow total"><span class="bl">Netto-Marge</span><span class="br" id="b_marge">—</span></div>
     </div>
 
     <div class="verdict" id="verdict"></div>
@@ -407,33 +408,38 @@ function v(id) { return parseFloat(document.getElementById(id).value) || 0; }
 function fmtE(n) { return n.toFixed(2)+' €'; }
 function fmtM(n) { return (n>=0?'+':'')+n.toFixed(2)+' €'; }
 function calc() {
-  var ek_eur = mode==='jpy' ? (v('kurs')>0 ? v('jpy')/v('kurs') : 0) : v('ek_eur_direct');
-  var spct = v('sendico_pct');
+  var kurs = v('kurs');
+  var jpy_ek = mode==='jpy' ? v('jpy') : 0;
+  var sendico_jpy = 500;
+  var ek_eur = mode==='jpy' ? (kurs>0 ? jpy_ek/kurs : 0) : v('ek_eur_direct');
+  var sendico_eur = kurs>0 ? sendico_jpy/kurs : 0;
+  if (mode==='eur') sendico_eur = sendico_jpy/v('kurs')||sendico_jpy/155;
   var versand = v('versand');
   var vk = v('vk');
   var ebay_on = document.getElementById('ebay_on').checked;
 
-  var sendico_cost = ek_eur * spct/100;
   var ebay_cost = ebay_on ? vk * 0.12 : 0;
-  var gesamt = ek_eur + sendico_cost + versand;
-  var marge = vk - gesamt - ebay_cost;
+  var gesamt = ek_eur + sendico_eur + versand;
+  var marge_brutto = vk - gesamt - ebay_cost;
+  var ust = (vk - gesamt) * 0.19;
+  var marge_netto = marge_brutto - ust;
 
-  document.getElementById('b_spct').textContent = spct;
   document.getElementById('b_ek').textContent = fmtE(ek_eur);
-  document.getElementById('b_sendico').textContent = fmtE(sendico_cost);
+  document.getElementById('b_sendico').textContent = fmtE(sendico_eur);
   document.getElementById('b_versand').textContent = fmtE(versand);
   document.getElementById('b_ebay').textContent = ebay_on ? fmtE(ebay_cost) : '—';
   document.getElementById('row_ebay').style.opacity = ebay_on?'1':'0.5';
-  document.getElementById('b_marge').textContent = fmtM(marge);
+  document.getElementById('b_ust').textContent = fmtE(ust);
+  document.getElementById('b_marge').textContent = fmtM(marge_netto);
   document.getElementById('ek_val').textContent = fmtE(gesamt);
 
   var mv = document.getElementById('marge_val');
-  mv.textContent = marge.toFixed(2)+' €';
-  mv.className = 'mval'+(marge>=15?' good':marge<0?' bad':'');
+  mv.textContent = marge_netto.toFixed(2)+' €';
+  mv.className = 'mval'+(marge_netto>=15?' good':marge_netto<0?' bad':'');
 
   var vd = document.getElementById('verdict');
-  if (marge >= 15) { vd.textContent = 'Lohnt sich — gute Marge'; vd.className = 'verdict yes'; }
-  else if (marge >= 8) { vd.textContent = 'Grenzwertig — nur bei sicherem VK'; vd.className = 'verdict maybe'; }
+  if (marge_netto >= 15) { vd.textContent = 'Lohnt sich — gute Marge'; vd.className = 'verdict yes'; }
+  else if (marge_netto >= 8) { vd.textContent = 'Grenzwertig — nur bei sicherem VK'; vd.className = 'verdict maybe'; }
   else { vd.textContent = 'Lohnt sich nicht'; vd.className = 'verdict no'; }
 }
 calc();
