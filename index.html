@@ -312,10 +312,13 @@
         </div>
       </div>
       <div class="field">
-        <label>JPY/EUR Kurs</label>
-        <div class="input-wrap">
-          <input type="number" inputmode="decimal" id="kurs" value="155" min="1" step="1" oninput="calc()" />
-          <span class="unit">¥ pro €</span>
+        <label style="display:flex;align-items:center;justify-content:space-between;"><span>JPY/EUR Kurs</span><span id="kurs-status" style="font-size:11px;color:var(--hint);">wird geladen…</span></label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="input-wrap" style="flex:1;">
+            <input type="number" inputmode="decimal" id="kurs" value="155" min="1" step="1" oninput="calc()" />
+            <span class="unit">¥/€</span>
+          </div>
+          <button onclick="fetchRate()" style="padding:0 14px;height:44px;border:0.5px solid var(--border);border-radius:var(--radius-sm);background:var(--card);color:var(--muted);font-size:18px;cursor:pointer;flex-shrink:0;">↻</button>
         </div>
       </div>
     </div>
@@ -443,6 +446,28 @@ function calc() {
   else { vd.textContent = 'Lohnt sich nicht'; vd.className = 'verdict no'; }
 }
 calc();
+
+function fetchRate() {
+  var status = document.getElementById('kurs-status');
+  status.textContent = 'wird geladen…';
+  fetch('https://open.er-api.com/v6/latest/EUR')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data && data.rates && data.rates.JPY) {
+        var rate = Math.round(data.rates.JPY);
+        document.getElementById('kurs').value = rate;
+        var now = new Date();
+        status.textContent = 'aktuell: ' + now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+        calc();
+      } else {
+        status.textContent = 'Fehler – manuell eingeben';
+      }
+    })
+    .catch(function() {
+      status.textContent = 'kein Internet';
+    });
+}
+fetchRate();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
