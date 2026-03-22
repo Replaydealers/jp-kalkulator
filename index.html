@@ -371,6 +371,16 @@
         <span>eBay-Gebühren (12%)</span>
         <label class="switch"><input type="checkbox" id="ebay_on" checked onchange="calc()" /><span class="knob"></span></label>
       </div>
+      <div class="toggle-field">
+        <span>Versandkosten VK (ihr zahlt)</span>
+        <label class="switch"><input type="checkbox" id="vk_versand_on" onchange="toggleVkVersand()" /><span class="knob"></span></label>
+      </div>
+    </div>
+    <div id="vk_versand_field" style="display:none;margin-top:8px;">
+      <div class="input-wrap">
+        <input type="number" inputmode="decimal" id="vk_versand" value="5" min="0" step="0.5" oninput="calc()" />
+        <span class="unit">€</span>
+      </div>
     </div>
   </div>
 
@@ -393,6 +403,7 @@
       <div class="brow"><span class="bl">Versand JP→DE</span><span class="br" id="b_versand">—</span></div>
       <div class="brow"><span class="bl">EUSt Einfuhr (19%)</span><span class="br" id="b_eust">—</span></div>
       <div class="brow" id="row_ebay"><span class="bl">eBay-Geb. (12%)</span><span class="br" id="b_ebay">—</span></div>
+      <div class="brow" id="row_vk_versand"><span class="bl">Versand VK</span><span class="br" id="b_vk_versand">—</span></div>
       <div class="brow"><span class="bl">USt auf Marge (19%)</span><span class="br" id="b_ust">—</span></div>
       <div class="brow total"><span class="bl">Netto-Marge</span><span class="br" id="b_marge">—</span></div>
     </div>
@@ -424,6 +435,12 @@ function onEurInput() {
   calc();
 }
 
+function toggleVkVersand() {
+  var on = document.getElementById('vk_versand_on').checked;
+  document.getElementById('vk_versand_field').style.display = on ? '' : 'none';
+  calc();
+}
+
 function onVkEurInput() {
   var eur = v('vk');
   document.getElementById('vk_gbp').value = eur > 0 ? (eur * gbpEurRate).toFixed(2) : '';
@@ -445,10 +462,12 @@ function calc() {
   var vk = v('vk');
   var ebay_on = document.getElementById('ebay_on').checked;
 
+  var vk_versand_on = document.getElementById('vk_versand_on').checked;
+  var vk_versand = vk_versand_on ? v('vk_versand') : 0;
   var eust = (ek_eur + sendico_eur + versand) * 0.19;
   var ebay_cost = ebay_on ? vk * 0.12 : 0;
   var gesamt = ek_eur + sendico_eur + versand + eust;
-  var marge_brutto = vk - gesamt - ebay_cost;
+  var marge_brutto = vk - gesamt - ebay_cost - vk_versand;
   var ust = (vk - gesamt) * 0.19;
   var marge_netto = marge_brutto - ust;
 
@@ -458,6 +477,8 @@ function calc() {
   document.getElementById('b_eust').textContent = fmtE(eust);
   document.getElementById('b_ebay').textContent = ebay_on ? fmtE(ebay_cost) : '—';
   document.getElementById('row_ebay').style.opacity = ebay_on?'1':'0.5';
+  document.getElementById('b_vk_versand').textContent = vk_versand_on ? fmtE(vk_versand) : '—';
+  document.getElementById('row_vk_versand').style.opacity = vk_versand_on?'1':'0.5';
   document.getElementById('b_ust').textContent = fmtE(ust);
   document.getElementById('b_marge').textContent = fmtM(marge_netto);
   document.getElementById('ek_val').textContent = fmtE(gesamt);
