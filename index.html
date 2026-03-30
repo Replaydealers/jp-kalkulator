@@ -297,6 +297,25 @@
 <div class="scroll">
 
   <div class="card">
+    <div class="card-title">Artikelsuche</div>
+    <div class="field">
+      <label>Artikelnummer</label>
+      <div style="display:flex;gap:8px;">
+        <div class="input-wrap" style="flex:1;">
+          <input type="text" inputmode="numeric" id="artikel_nr" placeholder="z.B. 1042" style="font-size:17px;font-weight:500;" onkeydown="if(event.key==='Enter')searchArtikel()" />
+        </div>
+        <button onclick="searchArtikel()" style="padding:0 16px;height:44px;border:none;border-radius:var(--radius-sm);background:var(--green-dark);color:white;font-size:14px;font-weight:600;cursor:pointer;flex-shrink:0;">Suchen</button>
+      </div>
+    </div>
+    <div id="artikel_loading" style="display:none;margin-top:8px;font-size:13px;color:var(--muted);">Wird geladen…</div>
+    <div id="artikel_error" style="display:none;margin-top:8px;font-size:13px;color:#A32D2D;">Artikel nicht gefunden.</div>
+    <div id="artikel_result" style="display:none;margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);">
+      <div style="font-size:14px;font-weight:600;color:var(--text);" id="artikel_name">—</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px;" id="artikel_info">—</div>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-title">Preise</div>
 
     <div class="field">
@@ -493,6 +512,55 @@ function calc() {
   else { vd.textContent = 'Lohnt sich nicht'; vd.className = 'verdict no'; }
 }
 onJpyInput();
+function searchArtikel() {
+  var nr = document.getElementById('artikel_nr').value.trim();
+  if (!nr) return;
+
+  document.getElementById('artikel_result').style.display = 'none';
+  document.getElementById('artikel_error').style.display = 'none';
+  document.getElementById('artikel_loading').style.display = '';
+
+  var base = 'appwhhRzsznu1LTRX';
+  var table = 'Artikel_2026';
+  var token = 'patNPI9NMOZC3ZJgh.5815eddd9a34b7821d4eebcd67395c1707f49ac7bc12ecf1910e7f0ba38bd7ec';
+  var filter = encodeURIComponent('{ITEM_Artikelnummer}="' + nr + '"');
+  var url = 'https://api.airtable.com/v0/' + base + '/' + encodeURIComponent(table) + '?filterByFormula=' + filter + '&fields%5B%5D=ITEM_Artikel&fields%5B%5D=ITEM_EK_Preis&fields%5B%5D=ITEM_Mindest_VK&fields%5B%5D=ITEM_Status&maxRecords=1';
+
+  fetch(url, { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('artikel_loading').style.display = 'none';
+      if (!data.records || data.records.length === 0) {
+        document.getElementById('artikel_error').style.display = '';
+        return;
+      }
+      var f = data.records[0].fields;
+      var name = f['ITEM_Artikel'] || '—';
+      var ek = f['ITEM_EK_Preis'] || 0;
+      var minVk = f['ITEM_Mindest_VK'] || 0;
+      var status = f['ITEM_Status'] || '';
+
+      document.getElementById('artikel_name').textContent = name;
+      document.getElementById('artikel_info').textContent = 'EK: ' + ek.toFixed(2) + ' € · Min-VK: ' + minVk.toFixed(2) + ' € · ' + status;
+      document.getElementById('artikel_result').style.display = '';
+
+      // Prefill fields
+      if (ek > 0) {
+        document.getElementById('ek_eur').value = ek.toFixed(2);
+        onEurInput();
+      }
+      if (minVk > 0) {
+        document.getElementById('vk').value = minVk.toFixed(2);
+        onVkEurInput();
+      }
+    })
+    .catch(function() {
+      document.getElementById('artikel_loading').style.display = 'none';
+      document.getElementById('artikel_error').textContent = 'Verbindungsfehler – kein Internet?';
+      document.getElementById('artikel_error').style.display = '';
+    });
+}
+
 function fetchRate() {
   var status = document.getElementById('kurs-status');
   status.textContent = 'wird geladen…';

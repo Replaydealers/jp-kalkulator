@@ -1,4 +1,4 @@
-const CACHE = 'jp-kalk-v9';
+const CACHE = 'jp-kalk-v10';
 const FILES = [
   '/jp-kalkulator/',
   '/jp-kalkulator/index.html',
